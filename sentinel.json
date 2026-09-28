@@ -1,0 +1,16 @@
+{
+  "timeout_seconds": 10,
+  "slow_ms": 1500,
+  "tls_warn_days": 14,
+  "sites": [
+    {
+      "name": "parliament",
+      "url": "https://am-parliament.org",
+      "skip_paths": ["/.env", "/.git/HEAD", "/.git/config"]
+    },
+    {
+      "name": "portfolio",
+      "url": "https://masonkimball.dev"
+    }
+  ]
+}

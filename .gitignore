@@ -1,0 +1,6 @@
+/sentinel
+/go-sentinel
+/dist/
+.DS_Store
+sentinel-state.json
+.sentinel-state-*

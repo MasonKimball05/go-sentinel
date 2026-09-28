@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sentinel</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="app.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <span class="dot" id="overall" data-status="pending"></span>
+      <h1>Sentinel</h1>
+    </div>
+    <div class="meta">
+      <span id="summary">Loading…</span>
+      <span class="muted"><span id="last-run"></span> · <span id="alerts"></span></span>
+    </div>
+    <button id="run" type="button">Run now</button>
+  </header>
+
+  <main id="sites" class="grid" aria-live="polite"></main>
+
+  <template id="site-card">
+    <section class="card">
+      <div class="card-head">
+        <span class="dot"></span>
+        <div>
+          <h2></h2>
+          <a class="url" target="_blank" rel="noopener noreferrer"></a>
+        </div>
+      </div>
+      <ul class="checks"></ul>
+    </section>
+  </template>
+</body>
+</html>

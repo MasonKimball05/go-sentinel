@@ -1,0 +1,49 @@
+name: sentinel
+
+on:
+  schedule:
+    # Every 30 minutes. GitHub may delay scheduled runs by a few minutes.
+    - cron: "*/30 * * * *"
+  workflow_dispatch: # adds a "Run workflow" button in the Actions tab
+
+# Only one run at a time, so two runs never race on the state cache.
+concurrency:
+  group: sentinel
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      # State from the previous run, so alerts fire on changes only.
+      # Each run saves under a new key; restore-keys picks the newest.
+      - uses: actions/cache/restore@v4
+        with:
+          path: sentinel-state.json
+          key: sentinel-state-${{ github.run_id }}
+          restore-keys: sentinel-state-
+
+      - name: Check sites
+        env:
+          SENTINEL_NTFY_URL: ${{ secrets.SENTINEL_NTFY_URL }}
+          SENTINEL_DISCORD_WEBHOOK: ${{ secrets.SENTINEL_DISCORD_WEBHOOK }}
+          NO_COLOR: "1"
+        # Alerts come from sentinel itself, so a failing site shouldn't also
+        # turn the workflow red (GitHub would email you a second time).
+        run: go run . || echo "::warning::one or more checks failed"
+
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: sentinel-state.json
+          key: sentinel-state-${{ github.run_id }}
