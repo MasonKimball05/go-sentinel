@@ -57,6 +57,9 @@ type Result struct {
 	Check  string `json:"check"`
 	Status Status `json:"status"`
 	Detail string `json:"detail"`
+	// Metric is the check's key number, when it has one: response time in
+	// milliseconds for "status", days until certificate expiry for "tls".
+	Metric *int64 `json:"metric,omitempty"`
 }
 
 // Clients holds the two HTTP clients the checks need.
@@ -109,7 +112,7 @@ func RunAll(ctx context.Context, cfg config.Config, c Clients) []Result {
 func RunSite(ctx context.Context, cfg config.Config, c Clients, site config.Site) []Result {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, site.URL, nil)
 	if err != nil {
-		return []Result{{site.Name, "status", Fail, "unreachable: " + err.Error()}}
+		return []Result{{site.Name, "status", Fail, "unreachable: " + err.Error(), nil}}
 	}
 	req.Header.Set("User-Agent", userAgent)
 
@@ -117,7 +120,7 @@ func RunSite(ctx context.Context, cfg config.Config, c Clients, site config.Site
 	resp, err := c.Follow.Do(req)
 	elapsed := time.Since(start)
 	if err != nil {
-		return []Result{{site.Name, "status", Fail, "unreachable: " + err.Error()}}
+		return []Result{{site.Name, "status", Fail, "unreachable: " + err.Error(), nil}}
 	}
 	// defer runs when RunSite returns, whichever return path we take.
 	defer resp.Body.Close()

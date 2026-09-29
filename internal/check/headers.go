@@ -61,9 +61,9 @@ func checkHeaders(site config.Site, resp *http.Response) []Result {
 
 	results := make([]Result, 0, 2)
 	if len(problems) == 0 {
-		results = append(results, Result{site.Name, "headers", OK, "all security headers present"})
+		results = append(results, Result{site.Name, "headers", OK, "all security headers present", nil})
 	} else {
-		results = append(results, Result{site.Name, "headers", Warn, strings.Join(problems, "; ")})
+		results = append(results, Result{site.Name, "headers", Warn, strings.Join(problems, "; "), nil})
 	}
 
 	// Leaky headers hand attackers your exact software versions.
@@ -75,7 +75,7 @@ func checkHeaders(site config.Site, resp *http.Response) []Result {
 		leaks = append(leaks, "X-Powered-By: "+p)
 	}
 	if len(leaks) > 0 {
-		results = append(results, Result{site.Name, "info-leak", Warn, strings.Join(leaks, "; ")})
+		results = append(results, Result{site.Name, "info-leak", Warn, strings.Join(leaks, "; "), nil})
 	}
 	return results
 }

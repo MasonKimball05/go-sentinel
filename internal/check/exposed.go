@@ -37,7 +37,7 @@ func looksLikeHTML(b []byte) bool {
 func checkExposed(ctx context.Context, client *http.Client, site config.Site) []Result {
 	base, err := url.Parse(site.URL)
 	if err != nil {
-		return []Result{{site.Name, "exposed-files", Fail, err.Error()}}
+		return []Result{{site.Name, "exposed-files", Fail, err.Error(), nil}}
 	}
 
 	var probes []probe
@@ -51,7 +51,7 @@ func checkExposed(ctx context.Context, client *http.Client, site config.Site) []
 		probes = append(probes, probe{p, func(b []byte) bool { return !looksLikeHTML(b) }})
 	}
 	if len(probes) == 0 {
-		return []Result{{site.Name, "exposed-files", OK, "all probes skipped by config"}}
+		return []Result{{site.Name, "exposed-files", OK, "all probes skipped by config", nil}}
 	}
 
 	var leaks, errs []string
@@ -68,11 +68,11 @@ func checkExposed(ctx context.Context, client *http.Client, site config.Site) []
 
 	switch {
 	case len(leaks) > 0:
-		return []Result{{site.Name, "exposed-files", Fail, "publicly readable: " + strings.Join(leaks, ", ")}}
+		return []Result{{site.Name, "exposed-files", Fail, "publicly readable: " + strings.Join(leaks, ", "), nil}}
 	case len(errs) > 0:
-		return []Result{{site.Name, "exposed-files", Warn, "could not probe " + strings.Join(errs, "; ")}}
+		return []Result{{site.Name, "exposed-files", Warn, "could not probe " + strings.Join(errs, "; "), nil}}
 	default:
-		return []Result{{site.Name, "exposed-files", OK, fmt.Sprintf("%d sensitive path(s) not exposed", len(probes))}}
+		return []Result{{site.Name, "exposed-files", OK, fmt.Sprintf("%d sensitive path(s) not exposed", len(probes)), nil}}
 	}
 }
 
