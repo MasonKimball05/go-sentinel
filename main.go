@@ -18,6 +18,7 @@ import (
 	"github.com/MasonKimball05/go-sentinel/internal/alert"
 	"github.com/MasonKimball05/go-sentinel/internal/check"
 	"github.com/MasonKimball05/go-sentinel/internal/config"
+	"github.com/MasonKimball05/go-sentinel/internal/status"
 )
 
 func main() {
@@ -28,6 +29,7 @@ func main() {
 	addr := flag.String("addr", "127.0.0.1:8484", "dashboard listen address (with -serve)")
 	noOpen := flag.Bool("no-open", false, "don't open the dashboard in a browser (with -serve)")
 	testAlert := flag.Bool("test-alert", false, "send a test notification to every alert destination and exit")
+	statusFile := flag.String("status-file", "", "also write a public status summary (up/down, response time, TLS expiry) to this JSON file")
 	flag.Parse()
 
 	cfg, err := config.Load(*configPath)
@@ -77,6 +79,11 @@ func main() {
 			printTable(results)
 		}
 		alerter.Process(ctx, results)
+		if *statusFile != "" {
+			if err := status.Write(*statusFile, status.Build(cfg, results, time.Now())); err != nil {
+				fmt.Fprintln(os.Stderr, "sentinel: write status:", err)
+			}
+		}
 		for _, r := range results {
 			if r.Status == check.Fail {
 				return false
