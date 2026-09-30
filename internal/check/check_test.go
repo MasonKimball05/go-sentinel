@@ -2,6 +2,7 @@ package check
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,7 +16,15 @@ import (
 // config + clients pointed at it. t.Cleanup shuts it down after the test.
 func newSite(t *testing.T, handler http.HandlerFunc) (config.Config, Clients) {
 	t.Helper()
-	srv := httptest.NewTLSServer(handler)
+	return newSiteTLS(t, handler, nil)
+}
+
+// newSiteTLS is newSite with control over the server's TLS settings.
+func newSiteTLS(t *testing.T, handler http.HandlerFunc, serverTLS *tls.Config) (config.Config, Clients) {
+	t.Helper()
+	srv := httptest.NewUnstartedServer(handler)
+	srv.TLS = serverTLS
+	srv.StartTLS()
 	t.Cleanup(srv.Close)
 
 	cfg, err := config.Parse([]byte(`{"sites":[{"name":"test","url":"` + srv.URL + `"}]}`))
@@ -139,6 +148,38 @@ func TestSkipPathsAreNeverRequested(t *testing.T) {
 
 	if r := find(t, RunAll(context.Background(), cfg, c), "exposed-files"); r.Status != OK {
 		t.Errorf("got %s (%s), want ok", r.Status, r.Detail)
+	}
+}
+
+func TestPostQuantumKeyExchangePasses(t *testing.T) {
+	// Go's TLS server supports X25519MLKEM768 by default, like Cloudflare.
+	cfg, c := newSite(t, func(w http.ResponseWriter, r *http.Request) {})
+	r := find(t, RunAll(context.Background(), cfg, c), "pq-tls")
+	if r.Status != OK || !strings.Contains(r.Detail, "MLKEM") {
+		t.Errorf("got %s (%s), want ok with an ML-KEM group", r.Status, r.Detail)
+	}
+}
+
+func TestClassicalKeyExchangeWarns(t *testing.T) {
+	// A server that only offers X25519, like most sites today.
+	cfg, c := newSiteTLS(t, func(w http.ResponseWriter, r *http.Request) {},
+		&tls.Config{CurvePreferences: []tls.CurveID{tls.X25519}})
+	r := find(t, RunAll(context.Background(), cfg, c), "pq-tls")
+	if r.Status != Warn || !strings.Contains(r.Detail, "X25519") {
+		t.Errorf("got %s (%s), want warn naming X25519", r.Status, r.Detail)
+	}
+}
+
+func TestIsPostQuantum(t *testing.T) {
+	for _, g := range []tls.CurveID{tls.X25519MLKEM768, tls.SecP256r1MLKEM768, tls.SecP384r1MLKEM1024, tls.MLKEM1024} {
+		if !IsPostQuantum(g) {
+			t.Errorf("%s should count as post-quantum", g)
+		}
+	}
+	for _, g := range []tls.CurveID{tls.X25519, tls.CurveP256, tls.CurveP384} {
+		if IsPostQuantum(g) {
+			t.Errorf("%s should not count as post-quantum", g)
+		}
 	}
 }
 

@@ -1,0 +1,8 @@
+.git
+.github
+status.json
+body.json
+sentinel-state.json
+.sentinel-state-*
+/sentinel
+/dist

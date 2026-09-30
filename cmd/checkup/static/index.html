@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Site Security Checkup · Mason Kimball</title>
+  <meta name="description" content="Grade any website's HTTPS, post-quantum TLS, and security headers, with fixes for each problem.">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="app.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">[ security checkup ]</p>
+      <h1>How secure is your site's front door?</h1>
+      <p class="lede">Checks HTTPS, post-quantum key exchange, security headers and version leaks, then tells you how to fix each problem. Passive only: it looks at what any browser would see, and never probes for files.</p>
+    </header>
+
+    <form id="form" autocomplete="off">
+      <label for="url" class="sr-only">Website address</label>
+      <input id="url" name="url" type="text" inputmode="url" placeholder="example.com" spellcheck="false" required>
+      <button id="go" type="submit">Check</button>
+    </form>
+    <p id="error" class="error" role="alert" hidden></p>
+
+    <section id="report" hidden aria-live="polite">
+      <div class="summary">
+        <div id="grade" class="grade">A</div>
+        <div>
+          <p id="site" class="site"></p>
+          <p id="score" class="muted"></p>
+        </div>
+      </div>
+      <ul id="findings" class="findings"></ul>
+    </section>
+
+    <footer>
+      <p class="muted">Built by <a href="https://masonkimball.dev" rel="noopener">Mason Kimball</a> on top of
+        <a href="https://masonkimball.dev/projects/sentinel" rel="noopener">Sentinel</a>, in Go.
+        Results are cached for 10 minutes.</p>
+    </footer>
+  </main>
+
+  <template id="finding">
+    <li class="finding">
+      <span class="badge"></span>
+      <div>
+        <p class="name"></p>
+        <p class="detail"></p>
+        <p class="tip"></p>
+      </div>
+    </li>
+  </template>
+</body>
+</html>

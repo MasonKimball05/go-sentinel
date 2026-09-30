@@ -130,6 +130,7 @@ func RunSite(ctx context.Context, cfg config.Config, c Clients, site config.Site
 	results := []Result{
 		checkStatus(site, resp, elapsed, cfg.SlowThreshold()),
 		checkTLS(site, resp, cfg.TLSWarnDays, time.Now()),
+		checkPQ(site, resp),
 	}
 	results = append(results, checkHeaders(site, resp)...)
 	results = append(results, checkExposed(ctx, c.NoFollow, site)...)

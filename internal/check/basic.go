@@ -1,6 +1,7 @@
 package check
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"time"
@@ -40,5 +41,33 @@ func checkTLS(site config.Site, resp *http.Response, warnDays int, now time.Time
 		return Result{site.Name, "tls", Warn, fmt.Sprintf("certificate expires in %d days (%s)", days, expiry), &days}
 	default:
 		return Result{site.Name, "tls", OK, fmt.Sprintf("expires in %d days (%s)", days, expiry), &days}
+	}
+}
+
+// checkPQ reports whether the TLS handshake used a post-quantum key exchange.
+//
+// A "harvest now, decrypt later" attacker can record today's traffic and
+// decrypt it once large quantum computers exist; a hybrid key exchange such
+// as X25519MLKEM768 (X25519 combined with the NIST-standardized ML-KEM) keeps
+// recorded sessions safe even then. Go's client offers these by default, so
+// the negotiated group shows what the server supports.
+func checkPQ(site config.Site, resp *http.Response) Result {
+	if resp.TLS == nil {
+		return Result{site.Name, "pq-tls", Warn, "not served over HTTPS", nil}
+	}
+	group := resp.TLS.CurveID
+	if IsPostQuantum(group) {
+		return Result{site.Name, "pq-tls", OK, fmt.Sprintf("post-quantum key exchange (%s)", group), nil}
+	}
+	return Result{site.Name, "pq-tls", Warn, fmt.Sprintf("classical key exchange only (%s)", group), nil}
+}
+
+// IsPostQuantum mirrors crypto/tls's unexported isPQKeyExchange.
+func IsPostQuantum(group tls.CurveID) bool {
+	switch group {
+	case tls.X25519MLKEM768, tls.SecP256r1MLKEM768, tls.SecP384r1MLKEM1024, tls.MLKEM1024:
+		return true
+	default:
+		return false
 	}
 }

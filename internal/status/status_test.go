@@ -23,6 +23,7 @@ func TestBuild(t *testing.T) {
 	results := []check.Result{
 		{Site: "parliament", Check: "status", Status: check.OK, Metric: ptr(251)},
 		{Site: "parliament", Check: "tls", Status: check.OK, Metric: ptr(45)},
+		{Site: "parliament", Check: "pq-tls", Status: check.OK, Detail: "post-quantum key exchange (X25519MLKEM768)"},
 		{Site: "portfolio", Check: "status", Status: check.Fail, Detail: "unreachable"},
 	}
 	s := Build(cfg, results, time.Date(2026, 9, 29, 18, 0, 0, 0, time.UTC))
@@ -31,10 +32,10 @@ func TestBuild(t *testing.T) {
 		t.Fatalf("got %d sites", len(s.Sites))
 	}
 	p := s.Sites[0]
-	if !p.Up || *p.ResponseMs != 251 || *p.TLSDays != 45 {
+	if !p.Up || *p.ResponseMs != 251 || *p.TLSDays != 45 || p.PostQuantum == nil || !*p.PostQuantum {
 		t.Errorf("parliament: %+v", p)
 	}
-	if s.Sites[1].Up || s.Sites[1].ResponseMs != nil {
+	if s.Sites[1].Up || s.Sites[1].ResponseMs != nil || s.Sites[1].PostQuantum != nil {
 		t.Errorf("portfolio should be down with no response time: %+v", s.Sites[1])
 	}
 }

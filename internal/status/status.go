@@ -1,8 +1,9 @@
 // Package status builds the public summary the portfolio shows.
 //
 // It deliberately publishes only availability facts (up/down, response time,
-// certificate expiry). Security findings such as missing headers or exposed
-// files stay private: a public list of a site's weaknesses is a map for attackers.
+// certificate expiry) plus whether TLS uses post-quantum key exchange. Security
+// findings such as missing headers or exposed files stay private: a public
+// list of a site's weaknesses is a map for attackers.
 package status
 
 import (
@@ -28,6 +29,8 @@ type Site struct {
 	Up         bool   `json:"up"`
 	ResponseMs *int64 `json:"response_ms,omitempty"`
 	TLSDays    *int64 `json:"tls_days_left,omitempty"`
+	// PostQuantum is set once the pq-tls check has run.
+	PostQuantum *bool `json:"post_quantum,omitempty"`
 }
 
 // Build turns a run's results into a Summary, in config order.
@@ -46,6 +49,9 @@ func Build(cfg config.Config, results []check.Result, now time.Time) Summary {
 				out.ResponseMs = r.Metric
 			case "tls":
 				out.TLSDays = r.Metric
+			case "pq-tls":
+				pq := r.Status == check.OK
+				out.PostQuantum = &pq
 			}
 		}
 		s.Sites = append(s.Sites, out)
