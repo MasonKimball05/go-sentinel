@@ -1,0 +1,3 @@
+# Files not uploaded by `gcloud run deploy --source .`
+.gcloudignore
+#!include:.dockerignore

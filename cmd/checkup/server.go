@@ -48,7 +48,11 @@ func (s *server) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("GET /", http.FileServerFS(static))
 	mux.HandleFunc("GET /api/check", s.handleCheck)
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
+	// Cloud Run's front end reserves some paths ending in "z", /healthz among
+	// them, so it never reaches the app there. /health works everywhere.
+	health := func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) }
+	mux.HandleFunc("GET /health", health)
+	mux.HandleFunc("GET /healthz", health)
 	return s.securityHeaders(mux)
 }
 

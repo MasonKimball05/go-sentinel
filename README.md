@@ -100,6 +100,20 @@ gcloud run deploy checkup --source . --region us-central1 --allow-unauthenticate
 `--max-instances=1` caps cost; the free tier covers far more traffic than a
 portfolio tool gets. Set a budget alert in the Cloud Console anyway.
 
+On a new project the first deploy can fail with "the default service account is
+missing required IAM permissions". Grant the build role to the project's
+default compute service account (its number is in the error), then wait a
+couple of minutes for it to take effect:
+
+```bash
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+  --role="roles/run.builder" --condition=None
+```
+
+The health check is at `/health`. Cloud Run's front end reserves `/healthz`,
+so that path only works when running it elsewhere.
+
 ## Config (`sentinel.json`)
 
 ```jsonc
