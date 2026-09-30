@@ -102,3 +102,12 @@ func TestDialerDirectly(t *testing.T) {
 		t.Errorf("got %v, want ErrBlocked", err)
 	}
 }
+
+func TestControlErrorKinds(t *testing.T) {
+	if err := control("tcp", "127.0.0.1:443", nil); !errors.Is(err, ErrPrivateAddress) {
+		t.Errorf("loopback: got %v, want ErrPrivateAddress", err)
+	}
+	if err := control("tcp", "93.184.215.14:8080", nil); !errors.Is(err, ErrPort) {
+		t.Errorf("port 8080: got %v, want ErrPort", err)
+	}
+}

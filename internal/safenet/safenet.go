@@ -21,7 +21,15 @@ import (
 )
 
 // ErrBlocked is returned when a request would reach a non-public address or port.
+// The two errors below wrap it, so errors.Is(err, ErrBlocked) matches either.
 var ErrBlocked = errors.New("destination not allowed")
+
+var (
+	// ErrPrivateAddress: the host resolved to (or was) a non-public IP.
+	ErrPrivateAddress = fmt.Errorf("%w: not a public address", ErrBlocked)
+	// ErrPort: the connection was to a port other than 80 or 443.
+	ErrPort = fmt.Errorf("%w: port not allowed", ErrBlocked)
+)
 
 // Only the standard web ports: anything else would turn the checker into a port scanner.
 var allowedPorts = map[string]bool{"80": true, "443": true}
@@ -75,11 +83,11 @@ func control(network, address string, _ syscall.RawConn) error {
 		return ErrBlocked
 	}
 	if !allowedPorts[port] {
-		return fmt.Errorf("%w: port %s", ErrBlocked, port)
+		return fmt.Errorf("%w (%s)", ErrPort, port)
 	}
 	ip, err := netip.ParseAddr(host)
 	if err != nil || !IsPublic(ip) {
-		return fmt.Errorf("%w: %s is not a public address", ErrBlocked, host)
+		return fmt.Errorf("%w (%s)", ErrPrivateAddress, host)
 	}
 	return nil
 }

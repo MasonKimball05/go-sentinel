@@ -2,11 +2,16 @@ package check
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/MasonKimball05/go-sentinel/internal/safenet"
 )
 
 func runPublic(t *testing.T, handler http.HandlerFunc) Report {
@@ -79,5 +84,28 @@ func TestScoreNeverNegative(t *testing.T) {
 	})
 	if rep.Score != 0 || rep.Grade != "F" {
 		t.Errorf("got %s (%d), want F (0)", rep.Grade, rep.Score)
+	}
+}
+
+func TestUnwrapBlocked(t *testing.T) {
+	dial := func(err error) error {
+		return &url.Error{Op: "Get", URL: "http://x/", Err: &net.OpError{Op: "dial", Net: "tcp", Err: err}}
+	}
+	cases := []struct {
+		err  error
+		want string
+	}{
+		{dial(fmt.Errorf("%w (127.0.0.1)", safenet.ErrPrivateAddress)), "private or internal network"},
+		{dial(fmt.Errorf("%w (8080)", safenet.ErrPort)), "port other than 80 or 443"},
+		{dial(errors.New("connection refused")), "connection refused"},
+	}
+	for _, c := range cases {
+		got := unwrap(c.err)
+		if !strings.Contains(got, c.want) {
+			t.Errorf("unwrap(%v) = %q, want it to contain %q", c.err, got, c.want)
+		}
+		if strings.Contains(got, "127.0.0.1") {
+			t.Errorf("unwrap(%v) = %q, leaks the dial address", c.err, got)
+		}
 	}
 }

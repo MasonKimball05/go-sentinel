@@ -2,6 +2,7 @@ package check
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MasonKimball05/go-sentinel/internal/config"
+	"github.com/MasonKimball05/go-sentinel/internal/safenet"
 )
 
 // RunPublic runs the checks for the public site checkup against a site the
@@ -60,8 +62,20 @@ func publicStatus(site config.Site, resp *http.Response, elapsed, slow time.Dura
 	}
 }
 
-// unwrap keeps the useful tail of a *url.Error ("dial tcp ...: destination not allowed").
+// unwrap turns a request error into something a visitor can read. Blocked
+// connections get a plain explanation instead of Go's dial error ("dial tcp
+// 127.0.0.1:80: destination not allowed ..."); they happen when a hostname
+// resolves to a private address or a redirect points at one. Anything else
+// keeps the useful tail of the *url.Error.
 func unwrap(err error) string {
+	switch {
+	case errors.Is(err, safenet.ErrPrivateAddress):
+		return "the address leads to a private or internal network, which can't be checked"
+	case errors.Is(err, safenet.ErrPort):
+		return "the site redirected to a port other than 80 or 443, which can't be checked"
+	case errors.Is(err, safenet.ErrBlocked):
+		return "the site redirected somewhere that can't be checked"
+	}
 	if ue, ok := err.(*url.Error); ok {
 		return ue.Err.Error()
 	}
